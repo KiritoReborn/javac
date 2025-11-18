@@ -12,9 +12,9 @@ enum Role {
     STAFF
 }
 
-@Getter // Lombok: Creates all getter methods
-@Setter // Lombok: Creates all setter methods
-@NoArgsConstructor // Lombok: Creates the required public User() {} constructor
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor 
 public class User {
 
@@ -22,6 +22,6 @@ public class User {
     private String name;
     private String email;
     private String password;
-    private Role role; // Use the Role enum you just created
+    private Role role;
     private LocalDateTime createdAt;
 }
