@@ -4,10 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 enum OrderStatus {
     PENDING,
@@ -19,16 +17,27 @@ enum OrderStatus {
 @Setter
 @NoArgsConstructor 
 @AllArgsConstructor
+@Entity
+@Table(name="orders")
+@Data
+
 public class Order {
-    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private User user;  
-    private List<OrderItem> orderItems = new ArrayList<>();
-    private OrderStatus status;
-    private double totalPrice; 
-    private LocalDateTime createdAt;
-    public void addOrderItem(OrderItem item) {
-        orderItems.add(item);
-        item.setOrder(this);
-    }
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
+
+   // private List<OrderItem> orderItems = new ArrayList<>();
+    //private OrderStatus status;
+    private double totalPrice;
+
+    private LocalDateTime createdAt=LocalDateTime.now();
+
+//    public void addOrderItem(OrderItem item) {
+//        orderItems.add(item);
+//        item.setOrder(this);
+//    }
 }

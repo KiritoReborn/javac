@@ -1,20 +1,23 @@
 package com.canteen.canteen_system.model;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Getter 
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor
+@Entity
+@Table(name="menu_items")
+@Data
 public class MenuItem {
-    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String itemname;
     private String description;
     private double price;
     private String category;
+    private boolean available=true;
 
     
 }

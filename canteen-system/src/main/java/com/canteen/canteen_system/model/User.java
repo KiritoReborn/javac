@@ -2,10 +2,8 @@ package com.canteen.canteen_system.model;
 
 import java.time.LocalDateTime;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 enum Role {
     STUDENT,
@@ -15,13 +13,17 @@ enum Role {
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor 
+@AllArgsConstructor
+@Entity
+@Table(name="users")
+@Data
 public class User {
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String email;
     private String password;
-    private Role role;
+    //private Role role;
     private LocalDateTime createdAt;
 }
