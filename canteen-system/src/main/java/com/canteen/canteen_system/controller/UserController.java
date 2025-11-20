@@ -6,10 +6,7 @@ import com.canteen.canteen_system.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
 
@@ -32,6 +29,7 @@ public class UserController {
         }
     }
 
+
     @GetMapping("/users")
     public Iterable<UserDto> getAllUsers(@RequestParam(required = false,defaultValue = "",name="sort") String sort){
         if(!Set.of("name","email").contains(sort)){
@@ -51,6 +49,16 @@ public class UserController {
         }
         else {
             return ResponseEntity.ok(userMapper.userToUserDto(user));
+        }
+    }
+    @GetMapping("/users/role/{role}")
+    public ResponseEntity<UserDto> getUserByRole(@PathVariable String role){
+        var userrole=userRepository.findByRole(role);
+        if(userrole==null){
+            return ResponseEntity.notFound().build();
+        }
+        else {
+            return ResponseEntity.ok(userMapper.userToUserDto(userrole));
         }
     }
 

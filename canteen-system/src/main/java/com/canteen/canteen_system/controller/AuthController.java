@@ -1,13 +1,11 @@
 package com.canteen.canteen_system.controller;
 
 
+import com.canteen.canteen_system.dto.UserDto;
 import com.canteen.canteen_system.model.User;
 import com.canteen.canteen_system.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,9 +18,10 @@ public class AuthController {
     public String hello(){
         return "Hello World";
     }
-    @GetMapping("/register")
-    public String Register(){
-        return "Enter Details";
+    @PostMapping("/register/student")
+    public String Register(@RequestBody User user){
+
+        return "Success";
     }
 
 
