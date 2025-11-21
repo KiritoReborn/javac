@@ -2,9 +2,9 @@ package com.canteen.canteen_system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Getter 
-@Setter 
-@NoArgsConstructor 
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name="menu_items")
@@ -14,10 +14,7 @@ public class MenuItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String itemname;
-    private String description;
     private double price;
     private String category;
     private boolean available=true;
-
-    
 }
