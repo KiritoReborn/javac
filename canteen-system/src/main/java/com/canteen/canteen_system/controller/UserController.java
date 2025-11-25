@@ -9,11 +9,13 @@ import com.canteen.canteen_system.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -23,8 +25,10 @@ public class UserController {
     private final UserService userService;
     private final UserMapper userMapper;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/users/id/{id}")
+    @PreAuthorize("hasRole('Staff') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<UserDto> getUser(@PathVariable Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
@@ -35,6 +39,7 @@ public class UserController {
     }
 
     @GetMapping("/users")
+    @PreAuthorize("hasRole('Staff')")
     public List<UserDto> getAllUsers(@RequestParam(required = false, defaultValue = "", name = "sort") String sort) {
         List<User> users = userService.getAllUsers();
         return users.stream()
@@ -43,6 +48,7 @@ public class UserController {
     }
 
     @GetMapping("/users/name/{name}")
+    @PreAuthorize("hasRole('Staff')")
     public ResponseEntity<UserDto> getUserByName(@PathVariable String name) {
         User user = userService.getUserByName(name);
         if (user == null) {
@@ -52,17 +58,21 @@ public class UserController {
     }
 
     @GetMapping("/users/role/{role}")
-    public ResponseEntity<UserDto> getUserByRole(@PathVariable String role) {
-        User user = userService.getUserByRole(role);
-        if (user == null) {
+    @PreAuthorize("hasRole('Staff')")
+    public ResponseEntity<List<UserDto>> getUsersByRole(@PathVariable String role) {
+        List<User> users = userService.getUsersByRole(role);
+        if (users.isEmpty()) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(userMapper.userToUserDto(user));
+            List<UserDto> userDtos = users.stream()
+                    .map(userMapper::userToUserDto)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(userDtos);
         }
     }
 
-    // not working
     @PutMapping("/users/{id}")
+    @PreAuthorize("hasRole('Staff') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         var user = userService.getUserById(id);
         if (user == null) {
@@ -75,35 +85,44 @@ public class UserController {
     }
 
     @PostMapping("/users/{id}/change-password")
-    public ResponseEntity<Void> changepassword(@PathVariable Long id, @RequestBody ChangePasswordRequest request) {
+    @PreAuthorize("@userSecurity.isCurrentUser(#id)")
+    public ResponseEntity<?> changepassword(@PathVariable Long id, @RequestBody ChangePasswordRequest request) {
         var user = userService.getUserById(id);
         if (user == null) {
             return ResponseEntity.notFound().build();
         } else {
-            if (!user.getPassword().equals(request.getOldPassword())) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            // Use password encoder to verify old password
+            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Old password is incorrect");
             } else {
-                user.setPassword(request.getNewPassword());
+                // Encrypt new password before saving
+                user.setPassword(passwordEncoder.encode(request.getNewPassword()));
                 userRepository.save(user);
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok().body("Password changed successfully");
             }
         }
     }
 
     @DeleteMapping("/deleteuser")
-    public ResponseEntity<Void> deleteUser(@RequestBody User deletedUser) {
-        var user = userService.getUserById(deletedUser.getId());
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> deleteUser(@RequestBody User deletedUser) {
+        // Get current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        
+        var user = userService.getUserByEmail(currentUserEmail);
         if (user == null) {
             return ResponseEntity.notFound().build();
         } else {
-            if (user.getEmail().equals(deletedUser.getEmail())
-                    && deletedUser.getPassword().equals(user.getPassword())) {
+            // Verify password before deletion
+            if (passwordEncoder.matches(deletedUser.getPassword(), user.getPassword())) {
                 userRepository.delete(user);
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok().body("Account deleted successfully");
             } else {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Invalid password");
             }
         }
     }
-
 }

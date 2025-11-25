@@ -1,5 +1,7 @@
 package com.canteen.canteen_system.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class LoginDto {
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
     private String email;
+    
+    @NotBlank(message = "Password is required")
     private String password;
 }

@@ -21,8 +21,8 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
-//    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<OrderItem> orderItems = new ArrayList<>();
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.PENDING;

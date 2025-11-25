@@ -2,6 +2,8 @@ package com.canteen.canteen_system.model;
 
 public enum OrderStatus {
     PENDING,
+    PREPARING,
+    READY,
     COMPLETED,
     CANCELLED
 }

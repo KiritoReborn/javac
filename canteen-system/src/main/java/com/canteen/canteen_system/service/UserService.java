@@ -4,29 +4,30 @@ import com.canteen.canteen_system.dto.LoginDto;
 import com.canteen.canteen_system.model.User;
 import com.canteen.canteen_system.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-@Data
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()) != null) {
             throw new RuntimeException("Email already in use");
         }
+        // Encrypt password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
     public User loginUser(LoginDto loginDto) {
         User user = userRepository.findByEmail(loginDto.getEmail());
-        if (user != null && user.getPassword().equals(loginDto.getPassword())) {
+        if (user != null && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
             return user;
         }
         return null;
@@ -44,10 +45,13 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    public User getUserByRole(String role) {
+    public List<User> getUsersByRole(String role) {
         com.canteen.canteen_system.model.Role roleEnum = com.canteen.canteen_system.model.Role
                 .valueOf(role.toUpperCase());
-        return userRepository.findByRole(roleEnum);
+        // Return all users with this role (fix: was returning single user)
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == roleEnum)
+                .toList();
     }
 
     public User getUserByName(String username) {
