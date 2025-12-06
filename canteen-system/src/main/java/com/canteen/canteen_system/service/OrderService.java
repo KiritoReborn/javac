@@ -10,10 +10,14 @@ import com.canteen.canteen_system.repository.OrderRepository;
 import com.canteen.canteen_system.repository.OrderTokenRepository;
 import com.canteen.canteen_system.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +29,14 @@ import java.util.Random;
 @Service
 @AllArgsConstructor
 public class OrderService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+    
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final MenuRepository menuRepository;
     private final OrderTokenRepository orderTokenRepository;
-    private final WebSocketService webSocketService;
-    private final EmailService emailService;
+    private final NotificationService notificationService;
 
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
@@ -71,9 +77,25 @@ public class OrderService {
 
     @Transactional
     public Order createOrder(OrderRequestDto orderRequest) {
+        logger.info("Creating order for user {} on thread {}", 
+            orderRequest.getUserId(), Thread.currentThread().getName());
+        
         // Validate user exists
         User user = userRepository.findById(orderRequest.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", orderRequest.getUserId()));
+
+        // Security Check: Ensure user can only order for themselves (unless they're Staff)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_Staff"));
+        
+        // If not staff, user can only create orders for themselves
+        if (!isStaff && !currentUser.getId().equals(orderRequest.getUserId())) {
+            throw new BadRequestException("You can only create orders for yourself");
+        }
 
         // Create new order
         Order order = new Order();
@@ -114,6 +136,11 @@ public class OrderService {
         
         // Generate token for the order
         generateTokenForOrder(savedOrder);
+        
+        // Send notification asynchronously (non-blocking)
+        notificationService.sendNewOrderNotification(savedOrder);
+        
+        logger.info("Order {} created successfully", savedOrder.getId());
 
         return savedOrder;
     }
@@ -156,17 +183,19 @@ public class OrderService {
 
     @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        logger.info("Updating order {} status to {} on thread {}", 
+            orderId, newStatus, Thread.currentThread().getName());
+        
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
         order.setStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
         
-        // Send real-time notification
-        webSocketService.sendOrderStatusUpdate(orderId, newStatus.name());
+        // Send notifications asynchronously (non-blocking)
+        notificationService.sendOrderStatusNotifications(updatedOrder, newStatus);
         
-        // Send email notification
-        emailService.sendOrderStatusEmail(order.getUser().getEmail(), orderId, newStatus);
+        logger.info("Order {} status updated successfully", orderId);
         
         return updatedOrder;
     }

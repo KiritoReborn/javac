@@ -1,6 +1,7 @@
 package com.canteen.canteen_system.controller;
 
 import com.canteen.canteen_system.dto.ChangePasswordRequest;
+import com.canteen.canteen_system.dto.UpdateDto;
 import com.canteen.canteen_system.dto.UserDto;
 import com.canteen.canteen_system.mapper.UserMapper;
 import com.canteen.canteen_system.model.User;
@@ -72,13 +73,14 @@ public class UserController {
     }
 
     @PutMapping("/users/{id}")
-    @PreAuthorize("hasRole('Staff') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
+    @PreAuthorize("@userSecurity.isCurrentUser(#id)")
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UpdateDto updateDto) {
         var user = userService.getUserById(id);
         if (user == null) {
             return ResponseEntity.notFound().build();
         } else {
-            userMapper.update(userDto, user);
+            // Only update name and email (not role, password, or id)
+            userMapper.updateFromDto(updateDto, user);
             userRepository.save(user);
             return ResponseEntity.ok(userMapper.userToUserDto(user));
         }

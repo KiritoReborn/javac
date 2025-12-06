@@ -13,7 +13,10 @@ public class MenuItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(name = "itemname")
     private String itemname;
+    
     private double price;
     private String category;
     private boolean available=true;

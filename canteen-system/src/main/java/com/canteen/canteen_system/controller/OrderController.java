@@ -126,7 +126,12 @@ public class OrderController {
             @RequestParam String status) {
         OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
         Order order = orderService.updateOrderStatus(id, newStatus);
-        return ResponseEntity.ok(orderMapper.orderToOrderResponseDto(order));
+        OrderResponseDto dto = orderMapper.orderToOrderResponseDto(order);
+        OrderToken token = orderService.getTokenByOrderId(id);
+        if (token != null) {
+            dto.setTokenNumber(token.getTokenNumber());
+        }
+        return ResponseEntity.ok(dto);
     }
     
     @PostMapping("/pickup/{tokenNumber}")
